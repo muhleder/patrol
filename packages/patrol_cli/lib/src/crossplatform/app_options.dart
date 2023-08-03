@@ -270,7 +270,7 @@ class MacOSAppOptions {
     final cmd = [
       ...['xcodebuild', 'test-without-building'],
       ...['-xctestrun', xcTestRunPath],
-      ...['-only-testing', 'RunnerTests'], //TODO UItests
+      ...['-only-testing', 'RunnerUITests'],
       ...[
         '-destination',
         'platform=macOS',
