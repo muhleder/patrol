@@ -41,3 +41,5 @@ flutter:
         pluginClass: PatrolPlugin
       ios:
         pluginClass: PatrolPlugin
+      macos:
+        pluginClass: PatrolPlugin
