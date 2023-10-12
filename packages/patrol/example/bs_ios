@@ -80,7 +80,7 @@ curl -u "$BROWSERSTACK_CREDS" \
     "app": "$app_url",
     "testSuite": "$test_url",
     "project": "Patrol example app",
-    "devices": ["iPhone X-11"],
+    "devices": ["iPhone 11-13"],
     "deviceLogs": "true",
     "idleTimeout": 300
 }
