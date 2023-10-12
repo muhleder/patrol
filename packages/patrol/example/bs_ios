@@ -19,7 +19,7 @@ pushd ios
 pod install
 FLUTTER_ROOT="$HOME/fvm/versions/stable" xcodebuild build-for-testing \
   -workspace Runner.xcworkspace \
-  -scheme dev \
+  -scheme Runner \
   -configuration Release \
   -sdk iphoneos -destination 'generic/platform=iOS' \
   -quiet \
@@ -32,7 +32,7 @@ popd
 cd build/ios_integ/Build/Products
 
 rm -rf Payload && mkdir -p Payload
-cp -r Release-dev-iphoneos/Runner.app Payload
+cp -r Release-iphoneos/Runner.app Payload
 zip -r Runner.ipa Payload
 
 cd -
@@ -49,21 +49,21 @@ echo "Uploaded app, url: $app_url"
 
 
 echo "Will zip tests now"
-cd build/ios_integ/Build/Products/Release-dev-iphoneos
+cd build/ios_integ/Build/Products/Release-iphoneos
 rm -rf ios_tests.zip
 
 # BrowserStack fails if DiagnosticCollectionPolicy is present
-plutil -remove 'TestConfigurations.TestTargets.DiagnosticCollectionPolicy' ../dev_TestPlan_iphoneos*.xctestrun
+plutil -remove 'TestConfigurations.TestTargets.DiagnosticCollectionPolicy' ../Runner_TestPlan_iphoneos*.xctestrun
 
-cp ../dev_TestPlan_iphoneos*.xctestrun .
-zip -r ios_tests.zip dev_TestPlan_iphoneos*.xctestrun RunnerUITests-Runner.app
+cp ../Runner_TestPlan_iphoneos*.xctestrun .
+zip -r ios_tests.zip Runner_TestPlan_iphoneos*.xctestrun RunnerUITests-Runner.app
 cd -
 
 # https://www.browserstack.com/docs/app-automate/api-reference/xcuitest/tests#upload-a-test-suite
 test_upload_response="$(
   curl -u "$BROWSERSTACK_CREDS" \
     -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
-    -F "file=@$PWD/build/ios_integ/Build/Products/Release-dev-iphoneos/ios_tests.zip"
+    -F "file=@$PWD/build/ios_integ/Build/Products/Release-iphoneos/ios_tests.zip"
 )"
 
 test_url="$(echo "$test_upload_response" | jq --raw-output .test_suite_url)"
