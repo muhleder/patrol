@@ -180,8 +180,13 @@
           throw PatrolError.viewNotExists("text field at index \(index) in app \(bundleId)")
         }
 
-        element.forceTap()
-        element.typeText(data)
+        do {
+          element.typeText(data)
+        } 
+        catch {
+          throw PatrolError.internal("Could not typeText in text field at index \(index) in app \(bundleId)")
+        }
+
       }
 
       // Prevent keyboard dismissal from happening too fast
