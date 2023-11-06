@@ -6,7 +6,7 @@ import FlyingFox
 
   private static let defaultPort = 8081
 
-  #if PATROL_ENABLED
+  #if true
     private let port: Int
     private let automator: Automator
     private let server: HTTPServer
@@ -35,7 +35,7 @@ import FlyingFox
   @objc public override init() {
     Logger.shared.i("PatrolServer constructor called")
 
-    #if PATROL_ENABLED
+    #if true
       Logger.shared.i("PATROL_ENABLED flag is defined")
       self.port = passedPort
       self.automator = Automator()
@@ -46,7 +46,7 @@ import FlyingFox
   }
 
   @objc public func start() async throws {
-    #if PATROL_ENABLED
+    #if true
       Logger.shared.i("Starting server...")
       
       let provider = AutomatorServer(automator: automator) { appReady in
