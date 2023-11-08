@@ -37,7 +37,157 @@ class Automator {
         
         return app
     }
+
+    // MARK: General UI interaction
     
+     func tap(onText text: String, inApp bundleId: String, atIndex index: Int) async throws {
+      let view = "view with text \(format: text) at index \(index) in app \(bundleId)"
+
+      try await runAction("tapping on \(view)") {
+        let app = try self.getApp(withBundleId: bundleId)
+
+        // The below selector is an equivalent of `app.descendants(matching: .any)[text]`
+        // TODO: We should consider more view properties. See #1554
+        let format = """
+          label == %@ OR \
+          title == %@ OR \
+          identifier == %@
+          """
+        let predicate = NSPredicate(format: format, text, text, text)
+        let query = app.descendants(matching: .any).matching(predicate)
+
+        Logger.shared.i("waiting for existence of \(view)")
+        guard let element = self.waitFor(query: query, index: index, timeout: self.timeout) else {
+          throw PatrolError.viewNotExists(view)
+        }
+
+        element.forceTap()
+      }
+    }
+
+    func doubleTap(onText text: String, inApp bundleId: String) async throws {
+      try await runAction("double tapping on text \(format: text) in app \(bundleId)") {
+        let app = try self.getApp(withBundleId: bundleId)
+        let element = app.descendants(matching: .any)[text]
+
+        let exists = element.waitForExistence(timeout: self.timeout)
+        guard exists else {
+          throw PatrolError.viewNotExists(
+            "view with text \(format: text) in app \(format: bundleId)")
+        }
+
+        element.firstMatch.forceTap()
+      }
+    }
+
+    func enterText(
+      _ data: String,
+      byText text: String,
+      atIndex index: Int,
+      inApp bundleId: String
+    ) async throws {
+      let view = "text field with text \(format: text) at index \(index) in app \(bundleId)"
+      let data = "\(data)\n"
+
+      try await runAction("entering text \(format: data) into \(view)") {
+        let app = try self.getApp(withBundleId: bundleId)
+
+        // elementType must be specified as integer
+        // See:
+        // * https://developer.apple.com/documentation/xctest/xcuielementtype/xcuielementtypetextfield
+        // * https://developer.apple.com/documentation/xctest/xcuielementtype/xcuielementtypesecuretextfield
+        // The below selector is an equivalent of `app.descendants(matching: .any)[text]`
+        // TODO: We should consider more view properties. See #1554
+        let format = """
+          label == %@ OR \
+          title == %@ OR \
+          identifier == %@ OR \
+          value == %@ OR \
+          placeholderValue == %@
+          """
+        let contentPredicate = NSPredicate(format: format, text, text, text, text, text)
+        let textFieldPredicate = NSPredicate(format: "elementType == 49")
+        let secureTextFieldPredicate = NSPredicate(format: "elementType == 50")
+
+        let finalPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+          contentPredicate,
+          NSCompoundPredicate(orPredicateWithSubpredicates: [
+            textFieldPredicate, secureTextFieldPredicate,
+          ]
+          ),
+        ])
+
+        let query = app.descendants(matching: .any).matching(finalPredicate)
+        guard
+          let element = self.waitFor(
+            query: query,
+            index: index,
+            timeout: self.timeout
+          )
+        else {
+          throw PatrolError.viewNotExists(view)
+        }
+
+        element.forceTap()
+        element.typeText(data)
+      }
+    }
+
+    func enterText(
+      _ data: String,
+      byIndex index: Int,
+      inApp bundleId: String
+    ) async throws {
+      var data = "\(data)\n"
+
+      try await runAction("entering text \(format: data) by index \(index) in app \(bundleId)") {
+        let app = try self.getApp(withBundleId: bundleId)
+
+        // elementType must be specified as integer
+        // See:
+        // * https://developer.apple.com/documentation/xctest/xcuielementtype/xcuielementtypetextfield
+        // * https://developer.apple.com/documentation/xctest/xcuielementtype/xcuielementtypesecuretextfield
+        let textFieldPredicate = NSPredicate(format: "elementType == 49")
+        let secureTextFieldPredicate = NSPredicate(format: "elementType == 50")
+        let predicate = NSCompoundPredicate(
+          orPredicateWithSubpredicates: [textFieldPredicate, secureTextFieldPredicate]
+        )
+
+        let textFieldsQuery = app.descendants(matching: .any).matching(predicate)
+        guard
+          let element = self.waitFor(
+            query: textFieldsQuery,
+            index: index,
+            timeout: self.timeout
+          )
+        else {
+          throw PatrolError.viewNotExists("text field at index \(index) in app \(bundleId)")
+        }
+
+        do {
+          element.typeText(data)
+        } 
+        catch {
+          throw PatrolError.internal("Could not typeText in text field at index \(index) in app \(bundleId)")
+        }
+
+      }
+    }        
+
+    func waitUntilVisible(onText text: String, inApp bundleId: String) async throws {
+      try await runAction(
+        "waiting until view with text \(format: text) in app \(bundleId) becomes visible"
+      ) {
+        let app = try self.getApp(withBundleId: bundleId)
+        let element = app.descendants(matching: .any)[text]
+        let exists = element.waitForExistence(timeout: self.timeout)
+        guard exists else {
+          throw PatrolError.viewNotExists(
+            "view with text \(format: text) in app \(format: bundleId)")
+        }
+      }
+    }
+
     // MARK: Services
     
     func enableBluetooth() async throws {
@@ -155,6 +305,23 @@ class Automator {
             self.systemPreferences.terminate()
         }
     }
+
+    @discardableResult
+    func waitFor(query: XCUIElementQuery, index: Int, timeout: TimeInterval) -> XCUIElement? {
+      var foundElement: XCUIElement?
+      let startTime = Date()
+
+      while Date().timeIntervalSince(startTime) < timeout {
+        let elements = query.allElementsBoundByIndex
+        if index < elements.count && elements[index].exists {
+          foundElement = elements[index]
+          break
+        }
+        sleep(1)
+      }
+
+      return foundElement
+    }
     
     private func runAction<T>(_ log: String, block: @escaping () throws -> T) async rethrows -> T {
         return try await MainActor.run {
@@ -165,6 +332,20 @@ class Automator {
             return result
         }
     }
+}
+
+// MARK: Utilities
+
+// Adapted from https://samwize.com/2016/02/28/everything-about-xcode-ui-testing-snapshot/
+extension XCUIElement {
+func forceTap() {
+    if self.isHittable {
+    self.tap()
+    } else {
+    let coordinate = self.coordinate(withNormalizedOffset: CGVector(dx: 0.0, dy: 0.0))
+    coordinate.tap()
+    }
+}
 }
 
 extension NativeView {

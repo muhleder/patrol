@@ -68,19 +68,41 @@ final class AutomatorServer: NativeAutomatorServer {
     
     func tap(request: TapRequest) async throws {
         return try await runCatching {
-            throw PatrolError.methodNotImplemented("tap")
+            try await automator.tap(
+                onText: request.selector.text ?? String(),
+                inApp: request.appId,
+                atIndex: request.selector.instance ?? 0
+            )
         }
     }
     
     func doubleTap(request: TapRequest) async throws {
         return try await runCatching {
-            throw PatrolError.methodNotImplemented("doubleTap")
+            try await automator.doubleTap(
+                onText: request.selector.text ?? String(),
+                inApp: request.appId
+            )
         }
     }
     
     func enterText(request: EnterTextRequest) async throws {
         return try await runCatching {
-            throw PatrolError.methodNotImplemented("enterText")
+            if let index = request.index {
+                try await automator.enterText(
+                    request.data,
+                    byIndex: Int(index),
+                    inApp: request.appId
+                )
+            } else if let selector = request.selector {
+                try await automator.enterText(
+                    request.data,
+                    byText: selector.text ?? String(),
+                    atIndex: selector.instance ?? 0,
+                    inApp: request.appId
+                )
+            } else {
+                throw PatrolError.internal("enterText(): neither index nor selector are set")
+            }
         }
     }
     
@@ -92,7 +114,10 @@ final class AutomatorServer: NativeAutomatorServer {
     
     func waitUntilVisible(request: WaitUntilVisibleRequest) async throws {
         return try await runCatching {
-            throw PatrolError.methodNotImplemented("waitUntilVisible")
+            try await automator.waitUntilVisible(
+                onText: request.selector.text ?? String(),
+                inApp: request.appId
+            )
         }
     }
     
