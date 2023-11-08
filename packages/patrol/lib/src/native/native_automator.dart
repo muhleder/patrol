@@ -211,6 +211,8 @@ class NativeAutomator {
       return _config.packageName;
     } else if (io.Platform.isIOS) {
       return _config.bundleId;
+    } else if (io.Platform.isMacOS) {
+      return _config.bundleId;
     }
 
     throw StateError('unsupported platform');
