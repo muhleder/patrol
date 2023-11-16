@@ -101,7 +101,11 @@ final class AutomatorServer: NativeAutomatorServer {
                     inApp: request.appId
                 )
             } else {
-                throw PatrolError.internal("enterText(): neither index nor selector are set")
+                try await automator.typeText(
+                    request.data,
+                    modifierKeys: request.modifierKeys,
+                    inApp: request.appId
+                )
             }
         }
     }

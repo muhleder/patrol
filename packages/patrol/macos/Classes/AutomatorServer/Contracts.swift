@@ -102,6 +102,7 @@ struct EnterTextRequest: Codable {
  var index: Int?
  var selector: Selector?
  var showKeyboard: Bool
+ var modifierKeys: [Int]
 }
 
 struct SwipeRequest: Codable {
