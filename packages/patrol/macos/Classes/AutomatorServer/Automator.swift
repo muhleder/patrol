@@ -174,6 +174,18 @@ class Automator {
       }
     }        
 
+    func typeText(
+      _ data: String,
+      modifierKeys: [Int],
+      inApp bundleId: String
+    ) async throws {
+      try await runAction("entering text \(format: data) by index \(index) in app \(bundleId)") {
+        let app = try self.getApp(withBundleId: bundleId)
+        let decodeModifierKeys = self.decodeModifierKeys(modifierKeys)
+        app.typeKey(data, modifierFlags: XCUIElement.KeyModifierFlags(decodeModifierKeys))
+      }
+    }        
+
     func waitUntilVisible(onText text: String, inApp bundleId: String) async throws {
       try await runAction(
         "waiting until view with text \(format: text) in app \(bundleId) becomes visible"
@@ -304,6 +316,29 @@ class Automator {
             
             self.systemPreferences.terminate()
         }
+    }
+
+    private func decodeModifierKeys(_ input: [Int]) -> [XCUIElement.KeyModifierFlags] {
+        var response: [XCUIElement.KeyModifierFlags] = []
+        for element in input {
+          switch(element) {
+            case 0x002000001f6:
+              response.append(XCUIElement.KeyModifierFlags.command)
+            case 0x002000001f0:
+              response.append( XCUIElement.KeyModifierFlags.control)
+            case 0x002000001f4:
+              response.append( XCUIElement.KeyModifierFlags.option)
+            case 0x002000001f2:
+              response.append( XCUIElement.KeyModifierFlags.shift)
+            case 0x00100000104:
+              response.append( XCUIElement.KeyModifierFlags.capsLock)
+            case 0x00100000106:
+              response.append( XCUIElement.KeyModifierFlags.function)
+            default:
+              print("No modifer key for \(element)")
+          }
+        }
+        return response
     }
 
     @discardableResult
