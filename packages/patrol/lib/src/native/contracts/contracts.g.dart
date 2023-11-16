@@ -203,6 +203,10 @@ EnterTextRequest _$EnterTextRequestFromJson(Map<String, dynamic> json) =>
           : Selector.fromJson(json['selector'] as Map<String, dynamic>),
       keyboardBehavior:
           $enumDecode(_$KeyboardBehaviorEnumMap, json['keyboardBehavior']),
+      modifierKeys: json['modifierKeys'] == null
+          ? const []
+          : const LogicalKeyboardKeyJsonConverter()
+              .fromJson(json['modifierKeys'] as List<int>),
     );
 
 Map<String, dynamic> _$EnterTextRequestToJson(EnterTextRequest instance) =>
@@ -212,6 +216,8 @@ Map<String, dynamic> _$EnterTextRequestToJson(EnterTextRequest instance) =>
       'index': instance.index,
       'selector': instance.selector,
       'keyboardBehavior': _$KeyboardBehaviorEnumMap[instance.keyboardBehavior]!,
+      'modifierKeys':
+          const LogicalKeyboardKeyJsonConverter().toJson(instance.modifierKeys),
     };
 
 const _$KeyboardBehaviorEnumMap = {
