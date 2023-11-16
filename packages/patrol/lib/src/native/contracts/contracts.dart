@@ -4,6 +4,7 @@
 //
 // ignore_for_file: public_member_api_docs
 
+import 'package:flutter/services.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'contracts.g.dart';
@@ -267,16 +268,18 @@ class EnterTextRequest {
     this.index,
     this.selector,
     required this.showKeyboard,
+    this.modifierKeys = const [],
   });
 
-  factory EnterTextRequest.fromJson(Map<String, dynamic> json) =>
-      _$EnterTextRequestFromJson(json);
+  factory EnterTextRequest.fromJson(Map<String, dynamic> json) => _$EnterTextRequestFromJson(json);
 
   final String data;
   final String appId;
   final int? index;
   final Selector? selector;
   final bool showKeyboard;
+  @LogicalKeyboardKeyJsonConverter()
+  final List<LogicalKeyboardKey> modifierKeys;
 
   Map<String, dynamic> toJson() => _$EnterTextRequestToJson(this);
 }
@@ -442,10 +445,22 @@ class SetLocationAccuracyRequest {
     required this.locationAccuracy,
   });
 
-  factory SetLocationAccuracyRequest.fromJson(Map<String, dynamic> json) =>
-      _$SetLocationAccuracyRequestFromJson(json);
+  factory SetLocationAccuracyRequest.fromJson(Map<String, dynamic> json) => _$SetLocationAccuracyRequestFromJson(json);
 
   final SetLocationAccuracyRequestLocationAccuracy locationAccuracy;
 
   Map<String, dynamic> toJson() => _$SetLocationAccuracyRequestToJson(this);
+}
+
+class LogicalKeyboardKeyJsonConverter extends JsonConverter<List<LogicalKeyboardKey>, List<int>> {
+  const LogicalKeyboardKeyJsonConverter();
+  @override
+  List<LogicalKeyboardKey> fromJson(List<int> json) {
+    return json.map((value) => LogicalKeyboardKey.findKeyByKeyId(value)!).toList();
+  }
+
+  @override
+  List<int> toJson(List<LogicalKeyboardKey> object) {
+    return object.map((e) => e.keyId).toList();
+  }
 }

@@ -208,6 +208,10 @@ EnterTextRequest _$EnterTextRequestFromJson(Map<String, dynamic> json) =>
           ? null
           : Selector.fromJson(json['selector'] as Map<String, dynamic>),
       showKeyboard: json['showKeyboard'] as bool,
+      modifierKeys: json['modifierKeys'] == null
+          ? const []
+          : const LogicalKeyboardKeyJsonConverter()
+              .fromJson(json['modifierKeys'] as List<int>),
     );
 
 Map<String, dynamic> _$EnterTextRequestToJson(EnterTextRequest instance) =>
@@ -217,6 +221,8 @@ Map<String, dynamic> _$EnterTextRequestToJson(EnterTextRequest instance) =>
       'index': instance.index,
       'selector': instance.selector,
       'showKeyboard': instance.showKeyboard,
+      'modifierKeys':
+          const LogicalKeyboardKeyJsonConverter().toJson(instance.modifierKeys),
     };
 
 SwipeRequest _$SwipeRequestFromJson(Map<String, dynamic> json) => SwipeRequest(
