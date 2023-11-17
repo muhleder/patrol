@@ -53,9 +53,6 @@ void patrolTest(
   dynamic tags,
   finders.PatrolTesterConfig config = const finders.PatrolTesterConfig(),
   NativeAutomatorConfig nativeAutomatorConfig = const NativeAutomatorConfig(),
-  @Deprecated('''
-This variable will be removed in the future, 
-if you use nativeAutomation with false, we recommend using patrolWidgetTest()''')
   bool nativeAutomation = false,
   BindingType bindingType = BindingType.patrol,
   LiveTestWidgetsFlutterBindingFramePolicy framePolicy =
