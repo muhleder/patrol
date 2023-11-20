@@ -1,4 +1,4 @@
-#if PATROL_ENABLED
+#if true
 import XCTest
 
 class Automator {
