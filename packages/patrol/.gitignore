@@ -13,3 +13,5 @@ pubspec.lock
 
 .vscode
 /coverage
+
+example/macos.bak

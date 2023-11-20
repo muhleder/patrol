@@ -10,6 +10,7 @@ import 'package:patrol_cli/src/crossplatform/flutter_tool.dart';
 import 'package:patrol_cli/src/dart_defines_reader.dart';
 import 'package:patrol_cli/src/devices.dart';
 import 'package:patrol_cli/src/ios/ios_test_backend.dart';
+import 'package:patrol_cli/src/macos/macos_test_backend.dart';
 import 'package:patrol_cli/src/pubspec_reader.dart';
 import 'package:patrol_cli/src/runner/patrol_command.dart';
 import 'package:patrol_cli/src/test_bundler.dart';
@@ -24,6 +25,7 @@ class DevelopCommand extends PatrolCommand {
     required PubspecReader pubspecReader,
     required AndroidTestBackend androidTestBackend,
     required IOSTestBackend iosTestBackend,
+    required MacOSTestBackend macosTestBackend,
     required FlutterTool flutterTool,
     required Analytics analytics,
     required Logger logger,
@@ -34,6 +36,7 @@ class DevelopCommand extends PatrolCommand {
         _pubspecReader = pubspecReader,
         _androidTestBackend = androidTestBackend,
         _iosTestBackend = iosTestBackend,
+        _macosTestBackend = macosTestBackend,
         _flutterTool = flutterTool,
         _analytics = analytics,
         _logger = logger {
@@ -64,6 +67,7 @@ class DevelopCommand extends PatrolCommand {
   final PubspecReader _pubspecReader;
   final AndroidTestBackend _androidTestBackend;
   final IOSTestBackend _iosTestBackend;
+  final MacOSTestBackend _macosTestBackend;
   final FlutterTool _flutterTool;
 
   final Analytics _analytics;
@@ -177,12 +181,20 @@ class DevelopCommand extends PatrolCommand {
       simulator: !device.real,
     );
 
-    await _build(androidOpts, iosOpts, device);
-    await _preExecute(androidOpts, iosOpts, device, uninstall);
+    final macosOpts = MacOSAppOptions(
+      flutter: flutterOpts,
+      bundleId: bundleId,
+      scheme: buildMode.createScheme(iosFlavor),
+      configuration: buildMode.createConfiguration(iosFlavor),
+    );
+
+    await _build(androidOpts, iosOpts, macosOpts, device);
+    await _preExecute(androidOpts, iosOpts, macosOpts, device, uninstall);
     await _execute(
       flutterOpts,
       androidOpts,
       iosOpts,
+      macosOpts,
       uninstall: uninstall,
       device: device,
       openDevtools: boolArg('open-devtools'),
@@ -194,12 +206,15 @@ class DevelopCommand extends PatrolCommand {
   Future<void> _build(
     AndroidAppOptions androidOpts,
     IOSAppOptions iosOpts,
+    MacOSAppOptions macosOpts,
     Device device,
   ) async {
     Future<void> Function() buildAction;
     switch (device.targetPlatform) {
       case TargetPlatform.android:
         buildAction = () => _androidTestBackend.build(androidOpts);
+      case TargetPlatform.macOS:
+        buildAction = () => _macosTestBackend.build(macosOpts);
       case TargetPlatform.iOS:
         buildAction = () => _iosTestBackend.build(iosOpts);
     }
@@ -219,6 +234,7 @@ class DevelopCommand extends PatrolCommand {
   Future<void> _preExecute(
     AndroidAppOptions androidOpts,
     IOSAppOptions iosOpts,
+    MacOSAppOptions macOSOpts,
     Device device,
     bool uninstall,
   ) async {
@@ -233,6 +249,11 @@ class DevelopCommand extends PatrolCommand {
         final packageName = androidOpts.packageName;
         if (packageName != null) {
           action = () => _androidTestBackend.uninstall(packageName, device);
+        }
+      case TargetPlatform.macOS: //TODO verify
+        final bundleId = macOSOpts.bundleId;
+        if (bundleId != null) {
+          action = () => _macosTestBackend.uninstall(bundleId, device);
         }
       case TargetPlatform.iOS:
         final bundleId = iosOpts.bundleId;
@@ -255,7 +276,8 @@ class DevelopCommand extends PatrolCommand {
   Future<void> _execute(
     FlutterAppOptions flutterOpts,
     AndroidAppOptions android,
-    IOSAppOptions iosOpts, {
+    IOSAppOptions ios,
+    MacOSAppOptions macos, {
     required bool uninstall,
     required Device device,
     required bool openDevtools,
@@ -267,21 +289,27 @@ class DevelopCommand extends PatrolCommand {
     switch (device.targetPlatform) {
       case TargetPlatform.android:
         appId = android.packageName;
-        action = () =>
-            _androidTestBackend.execute(android, device, interruptible: true);
+        action = () => _androidTestBackend.execute(android, device, interruptible: true);
         final package = android.packageName;
         if (package != null && uninstall) {
           finalizer = () => _androidTestBackend.uninstall(package, device);
         }
+      case TargetPlatform.macOS:
+        appId = macos.bundleId;
+        action = () async => _macosTestBackend.execute(macos, device, interruptible: true);
+        final bundle = macos.bundleId;
+        if (bundle != null && uninstall) {
+          finalizer = () => _macosTestBackend.uninstall(bundle, device);
+        }
       case TargetPlatform.iOS:
-        appId = iosOpts.bundleId;
+        appId = ios.bundleId;
         action = () async =>
-            _iosTestBackend.execute(iosOpts, device, interruptible: true);
-        final bundleId = iosOpts.bundleId;
+            _iosTestBackend.execute(ios, device, interruptible: true);
+        final bundleId = ios.bundleId;
         if (bundleId != null && uninstall) {
           finalizer = () => _iosTestBackend.uninstall(
                 appId: bundleId,
-                flavor: iosOpts.flutter.flavor,
+                flavor: ios.flutter.flavor,
                 device: device,
               );
         }

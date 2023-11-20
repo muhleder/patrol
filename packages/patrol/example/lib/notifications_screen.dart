@@ -31,6 +31,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             iOS: DarwinInitializationSettings(
               defaultPresentAlert: false,
             ),
+            macOS: DarwinInitializationSettings(
+              defaultPresentAlert: false,
+            ),
           ),
           onDidReceiveNotificationResponse: (notificationResponse) {
             setState(() {
@@ -65,6 +68,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           'main',
           'Default notification channel',
         ),
+        macOS: DarwinNotificationDetails(),
       ),
     );
   }
@@ -80,6 +84,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
       NotificationDetails(
         iOS: DarwinNotificationDetails(
+          interruptionLevel: InterruptionLevel.passive,
+        ),
+        macOS: DarwinNotificationDetails(
           interruptionLevel: InterruptionLevel.passive,
         ),
         android: AndroidNotificationDetails(

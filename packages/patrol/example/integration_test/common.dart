@@ -27,6 +27,7 @@ void patrol(
     config: _patrolTesterConfig,
     nativeAutomatorConfig: nativeAutomatorConfig ?? _nativeAutomatorConfig,
     framePolicy: framePolicy,
+    timeout: Timeout(Duration(seconds: 60)),
     skip: skip,
     callback,
   );
