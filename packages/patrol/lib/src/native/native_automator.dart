@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
@@ -511,6 +512,33 @@ class NativeAutomator {
         TapRequest(
           selector: selector,
           appId: appId ?? resolvedAppId,
+        ),
+      ),
+    );
+  }
+
+  /// Types a key or text at the app level. 
+  /// 
+  /// Ensuring text field visibility and focus are the responsibility of the test.
+  /// If modifier keys are provided, text length must be a single character.
+  ///
+  /// Only supported on macos and ios, modifier keys only supported on macos.
+  Future<void> typeText(
+    String text, {
+    String? appId,
+    List<LogicalKeyboardKey> modifierKeys = const [],
+  }) async {
+    if (modifierKeys.isNotEmpty) {
+      assert(text.length == 1);
+    }
+    await _wrapRequest(
+      'enterText',
+      () => _client.enterText(
+        EnterTextRequest(
+          data: text,
+          appId: appId ?? resolvedAppId,
+          keyboardBehavior: contracts.KeyboardBehavior.alternative,
+          modifierKeys: modifierKeys,
         ),
       ),
     );

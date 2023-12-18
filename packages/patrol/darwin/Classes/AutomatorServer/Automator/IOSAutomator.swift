@@ -95,6 +95,18 @@
       }
     }
 
+    func typeText(
+      _ data: String,
+      modifierKeys: [Int],
+      inApp bundleId: String
+    ) throws {
+      try runAction("entering text \(format: data) by index \(index) in app \(bundleId)") {
+        let app = try self.getApp(withBundleId: bundleId)
+        let decodeModifierKeys = self.decodeModifierKeys(modifierKeys)
+        app.typeKey(data, modifierFlags: XCUIElement.KeyModifierFlags(decodeModifierKeys))
+      }
+    }   
+
     func enterText(
       _ data: String,
       byText text: String,
@@ -809,6 +821,29 @@
         let app = try self.getApp(withBundleId: bundleId)
         app.activate()
       }
+    }
+
+    private func decodeModifierKeys(_ input: [Int]) -> [XCUIElement.KeyModifierFlags] {
+        var response: [XCUIElement.KeyModifierFlags] = []
+        for element in input {
+          switch(element) {
+            case 0x002000001f6:
+              response.append(XCUIElement.KeyModifierFlags.command)
+            case 0x002000001f0:
+              response.append( XCUIElement.KeyModifierFlags.control)
+            case 0x002000001f4:
+              response.append( XCUIElement.KeyModifierFlags.option)
+            case 0x002000001f2:
+              response.append( XCUIElement.KeyModifierFlags.shift)
+            case 0x00100000104:
+              response.append( XCUIElement.KeyModifierFlags.capsLock)
+            case 0x00100000106:
+              response.append( XCUIElement.KeyModifierFlags.function)
+            default:
+              print("No modifer key for \(element)")
+          }
+        }
+        return response
     }
 
     private func runAction<T>(_ log: String, block: @escaping () throws -> T) rethrows -> T {

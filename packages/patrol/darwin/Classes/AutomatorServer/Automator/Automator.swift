@@ -14,6 +14,7 @@
     // MARK: General UI interaction
     func tap(onText text: String, inApp bundleId: String, atIndex index: Int) throws
     func doubleTap(onText text: String, inApp bundleId: String) throws
+    func typeText(_ data: String, modifierKeys: [Int], inApp bundleId: String) throws  
     func enterText(
       _ data: String,
       byText text: String,

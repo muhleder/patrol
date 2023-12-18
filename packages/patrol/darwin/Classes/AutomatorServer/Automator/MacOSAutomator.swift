@@ -57,16 +57,56 @@
     }
 
     func tap(onText text: String, inApp bundleId: String, atIndex index: Int) throws {
-      try runAction("tap") {
-        throw PatrolError.methodNotImplemented("tap")
+      let view = "view with text \(format: text) at index \(index) in app \(bundleId)"
+
+      try runAction("tapping on \(view)") {
+        let app = try self.getApp(withBundleId: bundleId)
+
+        // The below selector is an equivalent of `app.descendants(matching: .any)[text]`
+        // TODO: We should consider more view properties. See #1554
+        let format = """
+          label == %@ OR \
+          title == %@ OR \
+          identifier == %@
+          """
+        let predicate = NSPredicate(format: format, text, text, text)
+        let query = app.descendants(matching: .any).matching(predicate)
+
+        Logger.shared.i("waiting for existence of \(view)")
+        guard let element = self.waitFor(query: query, index: index, timeout: self.timeout) else {
+          throw PatrolError.viewNotExists(view)
+        }
+
+        element.forceTap()
       }
     }
 
     func doubleTap(onText text: String, inApp bundleId: String) throws {
-      try runAction("doubleTap") {
-        throw PatrolError.methodNotImplemented("doubleTap")
+      try runAction("double tapping on text \(format: text) in app \(bundleId)") {
+        let app = try self.getApp(withBundleId: bundleId)
+        let element = app.descendants(matching: .any)[text]
+
+        let exists = element.waitForExistence(timeout: self.timeout)
+        guard exists else {
+          throw PatrolError.viewNotExists(
+            "view with text \(format: text) in app \(format: bundleId)")
+        }
+
+        element.firstMatch.forceTap()
       }
     }
+
+    func typeText(
+      _ data: String,
+      modifierKeys: [Int],
+      inApp bundleId: String
+    ) throws {
+      try runAction("entering text \(format: data) by index \(index) in app \(bundleId)") {
+        let app = try self.getApp(withBundleId: bundleId)
+        let decodeModifierKeys = self.decodeModifierKeys(modifierKeys)
+        app.typeKey(data, modifierFlags: XCUIElement.KeyModifierFlags(decodeModifierKeys))
+      }
+    }   
 
     func enterText(
       _ data: String, byText text: String, atIndex index: Int, inApp bundleId: String,
@@ -92,8 +132,16 @@
     }
 
     func waitUntilVisible(onText text: String, inApp bundleId: String) throws {
-      try runAction("waitUntilVisible") {
-        throw PatrolError.methodNotImplemented("waitUntilVisible")
+      try runAction(
+        "waiting until view with text \(format: text) in app \(bundleId) becomes visible"
+      ) {
+        let app = try self.getApp(withBundleId: bundleId)
+        let element = app.descendants(matching: .any)[text]
+        let exists = element.waitForExistence(timeout: self.timeout)
+        guard exists else {
+          throw PatrolError.viewNotExists(
+            "view with text \(format: text) in app \(format: bundleId)")
+        }
       }
     }
 
@@ -253,6 +301,46 @@
       }
     }
 
+    private func decodeModifierKeys(_ input: [Int]) -> [XCUIElement.KeyModifierFlags] {
+        var response: [XCUIElement.KeyModifierFlags] = []
+        for element in input {
+          switch(element) {
+            case 0x002000001f6:
+              response.append(XCUIElement.KeyModifierFlags.command)
+            case 0x002000001f0:
+              response.append( XCUIElement.KeyModifierFlags.control)
+            case 0x002000001f4:
+              response.append( XCUIElement.KeyModifierFlags.option)
+            case 0x002000001f2:
+              response.append( XCUIElement.KeyModifierFlags.shift)
+            case 0x00100000104:
+              response.append( XCUIElement.KeyModifierFlags.capsLock)
+            case 0x00100000106:
+              response.append( XCUIElement.KeyModifierFlags.function)
+            default:
+              print("No modifer key for \(element)")
+          }
+        }
+        return response
+    }
+
+    @discardableResult
+    func waitFor(query: XCUIElementQuery, index: Int, timeout: TimeInterval) -> XCUIElement? {
+      var foundElement: XCUIElement?
+      let startTime = Date()
+
+      while Date().timeIntervalSince(startTime) < timeout {
+        let elements = query.allElementsBoundByIndex
+        if index < elements.count && elements[index].exists {
+          foundElement = elements[index]
+          break
+        }
+        sleep(1)
+      }
+
+      return foundElement
+    }
+
     private func runAction<T>(_ log: String, block: @escaping () throws -> T) rethrows -> T {
       return try DispatchQueue.main.sync {
         Logger.shared.i("\(log)...")
@@ -261,6 +349,20 @@
         Logger.shared.i("result: \(result)")
         return result
       }
+    }
+  }
+
+  // MARK: Utilities
+
+  // Adapted from https://samwize.com/2016/02/28/everything-about-xcode-ui-testing-snapshot/
+  extension XCUIElement {
+    func forceTap() {
+        if self.isHittable {
+        self.tap()
+        } else {
+        let coordinate = self.coordinate(withNormalizedOffset: CGVector(dx: 0.0, dy: 0.0))
+        coordinate.tap()
+        }
     }
   }
 

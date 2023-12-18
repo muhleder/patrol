@@ -118,6 +118,7 @@ struct EnterTextRequest: Codable {
   var index: Int?
   var selector: Selector?
   var keyboardBehavior: KeyboardBehavior
+  var modifierKeys: [Int]
 }
 
 struct SwipeRequest: Codable {

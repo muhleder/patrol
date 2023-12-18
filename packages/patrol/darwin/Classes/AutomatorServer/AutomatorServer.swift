@@ -114,7 +114,11 @@
             dismissKeyboard: request.keyboardBehavior == .showAndDismiss
           )
         } else {
-          throw PatrolError.internal("enterText(): neither index nor selector are set")
+          try automator.typeText(
+            request.data,
+            modifierKeys: request.modifierKeys,
+            inApp: request.appId
+          )
         }
       }
     }
